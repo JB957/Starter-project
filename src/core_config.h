@@ -5,7 +5,7 @@
 
 /***************** CLOCK PARAMETERS ****************************/
 /***************************************************************/
-#define CORE_CLOCK_USE_HSE 1
+#define CORE_CLOCK_USE_HSE 0
 #define CORE_CLOCK_HSE_FREQ 24000
 #define CORE_CLOCK_SYSCLK_FREQ 160000
 #define CORE_CLOCK_HSI_FREQ 16000
@@ -105,28 +105,49 @@
 #define CORE_USART_RXBUFLEN 512
 #define CORE_USART_RX_TIMEOUT 64
 
-#define CORE_USART_UPRINTF 1
+#define CORE_USART_UPRINTF 0
 #define CORE_USART_TXBUFLEN 512
 
-#define CORE_USART1_PORT GPIOC
-#define CORE_USART1_PINS (GPIO_PIN_4 | GPIO_PIN_5)
-#define CORE_USART2_PORT GPIOA
-#define CORE_USART2_PINS (GPIO_PIN_3 | GPIO_PIN_2)
-#define CORE_USART3_PORT GPIOC
-#define CORE_USART3_PINS (GPIO_PIN_10 | GPIO_PIN_11)
+#define CORE_USART1_TX_PORT GPIOC
+#define CORE_USART1_TX_PIN  GPIO_PIN_4
+#define CORE_USART1_TX_AF   7
+#define CORE_USART1_RX_PORT GPIOC
+#define CORE_USART1_RX_PIN  GPIO_PIN_5
+#define CORE_USART1_RX_AF   7
+
+#define CORE_USART2_TX_PORT GPIOA
+#define CORE_USART2_TX_PIN  GPIO_PIN_2
+#define CORE_USART2_TX_AF   7
+#define CORE_USART2_RX_PORT GPIOA
+#define CORE_USART2_RX_PIN  GPIO_PIN_3
+#define CORE_USART2_RX_AF   7
+
+#define CORE_USART3_TX_PORT GPIOC
+#define CORE_USART3_TX_PIN  GPIO_PIN_10
+#define CORE_USART3_TX_AF   7
+#define CORE_USART3_RX_PORT GPIOC
+#define CORE_USART3_RX_PIN  GPIO_PIN_11
+#define CORE_USART3_RX_AF   7
+
+#define CORE_UART4_TX_PORT  GPIOC
+#define CORE_UART4_TX_PIN   GPIO_PIN_10
+#define CORE_UART4_TX_AF    5
+#define CORE_UART4_RX_PORT  GPIOC
+#define CORE_UART4_RX_PIN   GPIO_PIN_11
+#define CORE_UART4_RX_AF    5
+#define CORE_UART4_IRQ_PRIO 5
+
+#define CORE_UART5_TX_PORT  GPIOC
+#define CORE_UART5_TX_PIN   GPIO_PIN_12
+#define CORE_UART5_TX_AF    5
+#define CORE_UART5_RX_PORT  GPIOD
+#define CORE_UART5_RX_PIN   GPIO_PIN_2
+#define CORE_UART5_RX_AF    5
 
 
 /*********************** RTC PARAMETERS ************************/
 /***************************************************************/
 #define CORE_RTC_CENTURY 2000
-
-
-/******************** BOOTLOADER PARAMETERS ********************/
-/***************************************************************/
-#define CORE_BOOT_FDCAN FDCAN2
-#define CORE_BOOT_FDCAN_ID 0x004
-#define CORE_BOOT_FDCAN_MASTER_ID 0x084
-#define CORE_BOOT_FDCAN_BROADCAST_ID 0x7ff
 
 
 /********************* TIMEOUT PARAMETERS **********************/
