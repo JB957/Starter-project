@@ -18,6 +18,14 @@
 
 #include <stm32g4xx_hal.h>
 
+#define SPI_Enable_Write 0x06
+#define SPI_Disable_Write 0x04
+#define SPI_Write 0x02
+#define SPI_Read 0x03
+#define SPI_Read_Register 0x05
+#define SPI_Write_Register 0x01
+#define Start_addy 0x00
+
 void heartbeat_task(void *pvParameters)
 {
     (void)pvParameters;
@@ -103,9 +111,33 @@ void SendSPI(void *pvParameters)
     (void)pvParameters;
     while (true)
     {
+        uint8_t tx[] = {SPI_Write, Start_addy, 0x01, 0xAB, 0xCF};
+        EnableWrite();
         core_SPI_start(SPI1);
-        core_SPI_read_write(SPI1, )
+        core_SPI_read_write(SPI1, tx, 5, NULL, 0);
+        core_SPI_stop(SPI1);
+        uint8_t read_tx[] = {SPI_Read, Start_addy, 0x00, 0x00, 0x00};
+        uint8_t rx[] = {0};
+        core_SPI_start(SPI1);
+        core_SPI_read_write(SPI1, read_tx, 5, rx, 5);
+        core_SPI_stop(SPI1);
     }
+}
+
+void EnableWrite()
+{
+    uint8_t enable[] = {SPI_Enable_Write}; // WREN
+    core_SPI_start(SPI1);
+    core_SPI_read_write(SPI1, enable, 1, NULL, 0);
+    core_SPI_stop(SPI1);
+}
+
+void DisableWrite()
+{
+    uint8_t disable[] = {SPI_Disable_Write};
+    core_SPI_start(SPI1);
+    core_SPI_read_write(SPI1, disable, 1, NULL, 0);
+    core_SPI_stop(SPI1);
 }
 
 int main(void)
@@ -164,11 +196,11 @@ int main(void)
     //     error_handler();
     // }
 
-    int err4 = xTaskCreate(Print_Port12, "adc_pb12", 1000, NULL, 4, NULL);
-    if (err4 != pdPASS)
-    {
-        error_handler();
-    }
+    // int err4 = xTaskCreate(Print_Port12, "adc_pb12", 1000, NULL, 4, NULL);
+    // if (err4 != pdPASS)
+    // {
+    //     error_handler();
+    // }
 
     int err5 = xTaskCreate(lightToFreq, "light_to_freq", 1000, NULL, 4, NULL);
     if (err5 != pdPASS)
@@ -181,6 +213,12 @@ int main(void)
     // {
     //     error_handler();
     // }
+
+    int err7 = xTaskCreate(SendSPI, "SendSPI", 1000, NULL, 4, NULL);
+    if (err7 != pdPASS)
+    {
+        error_handler();
+    }
 
     NVIC_SetPriorityGrouping(NVIC_PRIORITYGROUP_4);
 
