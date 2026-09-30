@@ -26,6 +26,17 @@
 #define SPI_Write_Register 0x01
 #define Start_addy 0x00
 
+/* Function prototypes */
+uint8_t Get_NextAddress(void);
+void EnableWrite(void);
+void DisableWrite(void);
+void WriteSPI(uint8_t address, uint8_t data);
+void Increase_NextAddress(void);
+void Read_To_Free(void *pvParameters);
+void ReadRegister(void);
+
+// Blinky Light Code
+
 void heartbeat_task(void *pvParameters)
 {
     (void)pvParameters;
@@ -95,36 +106,97 @@ void lightToFreq(void *pvParameters)
     }
 }
 
-// void SendCanMessage(void *pvParameters)
-// {
-//     (void)pvParameters;
-//     while (true)
-//     {
-//         uint64_t data = 250;
-
-//         core_CAN_send_message(FDCAN1, 10, 8, data);
-//     }
-// }
-
-void SendSPI(void *pvParameters)
+// Can Code
+void SendCanMessage(void *pvParameters)
 {
     (void)pvParameters;
     while (true)
     {
-        uint8_t tx[] = {SPI_Write, Start_addy, 0x01, 0xAB, 0xCF};
+        core_CAN_send_from_tx_queue_task(FDCAN1);
+    }
+}
+
+void AddMessage()
+{
+    core_CAN_add_message_to_tx_queue(FDCAN1, 0x123, 1, 0xFF);
+}
+
+// // ########################## SPI Code #######################
+
+void Read_To_Free(void *pvParameters)
+{
+    (void)pvParameters;
+    while (true)
+    {
+        // WriteSPI(Get_NextAddress(), 0x07);
+        // // wait(1)
+        // // WriteSPI(Get_NextAddress(), 0xAF);
+        // // WriteSPI(Get_NextAddress(), 0xBC);
+        // for (uint8_t address = 0x00; address < Free_Address; address += 3)
+        // {
+        //     uint8_t read_tx[] = {SPI_Read, address, 0x00, 0x00, 0x00};
+        //     uint8_t rx[5] = {0};
+        //     core_SPI_start(SPI1);
+        //     core_SPI_read_write(SPI1, read_tx, 5, rx, 5);
+        //     core_SPI_stop(SPI1);
+        //     rprintf("RX:%02X %02X %02X\n", rx[2], rx[3], rx[4]);
+        //     vTaskDelay(pdMS_TO_TICKS(1000));
+        // }
+
+        uint8_t tx[] = {SPI_Write, 0x00, 0x1F, 0xAB, 0xCD};
         EnableWrite();
         core_SPI_start(SPI1);
         core_SPI_read_write(SPI1, tx, 5, NULL, 0);
         core_SPI_stop(SPI1);
-        uint8_t read_tx[] = {SPI_Read, Start_addy, 0x00, 0x00, 0x00};
-        uint8_t rx[] = {0};
+        DisableWrite();
+        vTaskDelay(pdMS_TO_TICKS(10));
+        uint8_t read_tx[] = {SPI_Read, 0x00, 0x00, 0x00, 0x00};
+        uint8_t rx[5] = {0};
         core_SPI_start(SPI1);
         core_SPI_read_write(SPI1, read_tx, 5, rx, 5);
         core_SPI_stop(SPI1);
+        rprintf("RX:%02X %02X %02X\n", rx[2], rx[3], rx[4]);
+        vTaskDelay(pdMS_TO_TICKS(1000));
     }
 }
 
-void EnableWrite()
+// void WriteSPI(uint8_t address, uint8_t data)
+// {
+//     uint8_t tx[] = {SPI_Write, address, data};
+//     EnableWrite();
+//     core_SPI_start(SPI1);
+//     core_SPI_read_write(SPI1, tx, 3, NULL, 0);
+//     core_SPI_stop(SPI1);
+//     DisableWrite();
+//     if (address == Get_NextAddress())
+//     {
+//         Increase_NextAddress();
+//     }
+// }
+
+// void Increase_NextAddress(void)
+// {
+//     uint8_t address = Get_NextAddress();
+//     address++;
+//     WriteSPI(Start_addy, address);
+// }
+
+// uint8_t Get_NextAddress(void)
+// {
+//     uint8_t tx[] = {SPI_Read, Start_addy, 0x00};
+//     uint8_t rx[3] = {0};
+//     core_SPI_start(SPI1);
+//     core_SPI_read_write(SPI1, tx, 3, rx, 3);
+//     core_SPI_stop(SPI1);
+//     if (rx[2] == 0xFF || rx[2] == 0x8F)
+//     {
+//         WriteSPI(Start_addy, 0x01);
+//         return 0x01;
+//     }
+//     return rx[2];
+// }
+
+void EnableWrite(void)
 {
     uint8_t enable[] = {SPI_Enable_Write}; // WREN
     core_SPI_start(SPI1);
@@ -132,13 +204,15 @@ void EnableWrite()
     core_SPI_stop(SPI1);
 }
 
-void DisableWrite()
+void DisableWrite(void)
 {
     uint8_t disable[] = {SPI_Disable_Write};
     core_SPI_start(SPI1);
     core_SPI_read_write(SPI1, disable, 1, NULL, 0);
     core_SPI_stop(SPI1);
 }
+
+//  Main Duh
 
 int main(void)
 {
@@ -170,6 +244,19 @@ int main(void)
     if (!core_CAN_init(FDCAN1, 1000000))
         error_handler();
 
+    // int err6 = xTaskCreate(SendCanMessage, "can", 1000, NULL, 4, NULL);
+    // if (err6 != pdPASS)
+    // {
+    //     error_handler();
+    // }
+
+    int err7 = xTaskCreate(Read_To_Free, "SendSPI", 1000, NULL, 4, NULL);
+    if (err7 != pdPASS)
+    {
+        error_handler();
+    }
+
+    //  Light Code
     // while (1)
     // {
     //     if (core_GPIO_digital_read(GPIOB, GPIO_PIN_11))
@@ -202,23 +289,11 @@ int main(void)
     //     error_handler();
     // }
 
-    int err5 = xTaskCreate(lightToFreq, "light_to_freq", 1000, NULL, 4, NULL);
-    if (err5 != pdPASS)
-    {
-        error_handler();
-    }
-
-    // int err6 = xTaskCreate(SendCanMessage, "can", 1000, NULL, 4, NULL);
-    // if (err6 != pdPASS)
+    // int err5 = xTaskCreate(lightToFreq, "light_to_freq", 1000, NULL, 4, NULL);
+    // if (err5 != pdPASS)
     // {
     //     error_handler();
     // }
-
-    int err7 = xTaskCreate(SendSPI, "SendSPI", 1000, NULL, 4, NULL);
-    if (err7 != pdPASS)
-    {
-        error_handler();
-    }
 
     NVIC_SetPriorityGrouping(NVIC_PRIORITYGROUP_4);
 
