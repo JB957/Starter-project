@@ -19,17 +19,30 @@
 #define WIDTH 10
 
 static uint8_t board[HEIGHT][WIDTH] = {0};
-static const uint8_t block[4][4] = {
-    {0, 1, 0, 0},
-    {1, 1, 1, 0},
-    {0, 0, 0, 0},
-    {0, 0, 0, 0},
+static const uint8_t block[4][4][4] = {
+    {{0, 1, 0, 0},
+     {1, 1, 1, 0},
+     {0, 0, 0, 0},
+     {0, 0, 0, 0}},
+    {{1, 0, 0, 0},
+     {1, 1, 0, 0},
+     {1, 0, 0, 0},
+     {0, 0, 0, 0}},
+    {{1, 1, 1, 0},
+     {0, 1, 0, 0},
+     {0, 0, 0, 0},
+     {0, 0, 0, 0}},
+    {{0, 1, 0, 0},
+     {1, 1, 0, 0},
+     {0, 1, 0, 0},
+     {0, 0, 0, 0}},
 };
 
 typedef struct
 {
     int x;
     int y;
+    int rotation;
 } Tetromino;
 
 static Tetromino piece;
@@ -104,6 +117,7 @@ static void new_block(void)
 {
     piece.x = 3;
     piece.y = 0;
+    piece.rotation = 0;
 }
 
 static bool can_move(int new_x, int new_y)
@@ -112,7 +126,7 @@ static bool can_move(int new_x, int new_y)
     {
         for (int x = 0; x < 4; x++)
         {
-            if (block[y][x])
+            if (block[piece.rotation][y][x])
             {
                 int board_x = new_x + x;
                 int board_y = new_y + y;
@@ -129,13 +143,22 @@ static bool can_move(int new_x, int new_y)
     return true;
 }
 
+static void rotate_piece(void)
+{
+    int old_rotation = piece.rotation;
+    piece.rotation = (piece.rotation + 1) % 4;
+
+    if (!can_move(piece.x, piece.y))
+        piece.rotation = old_rotation;
+}
+
 static void lock_piece(void)
 {
     for (int y = 0; y < 4; y++)
     {
         for (int x = 0; x < 4; x++)
         {
-            if (block[y][x])
+            if (block[piece.rotation][y][x])
             {
                 int board_x = piece.x + x;
                 int board_y = piece.y + y;
@@ -153,6 +176,8 @@ static void get_input(int key)
         piece.x++;
     if ((key == 's' || key == 'S') && can_move(piece.x, piece.y + 1))
         piece.y++;
+    if (key == 'w' || key == 'W')
+        rotate_piece();
 }
 
 static void update_game(void)
@@ -189,15 +214,15 @@ static void render(void)
             int local_y = y - piece.y;
 
             if (local_x >= 0 && local_x < 4 && local_y >= 0 && local_y < 4)
-                draw = draw || block[local_y][local_x];
+                draw = draw || block[piece.rotation][local_y][local_x];
 
-            putchar(draw ? '#' : ' ');
+            putchar(draw ? '#' : '.');
         }
         puts("|");
     }
 
     puts("+----------+");
-    puts("A/D: move  S: down  Q: quit");
+    puts("A/D: move  S: down  W: rotate  Q: quit");
     fflush(stdout);
 }
 

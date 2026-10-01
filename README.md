@@ -38,9 +38,10 @@ gcc -std=c11 -Wall -Wextra -o pc/tetris.exe pc/main.c
 .\pc\tetris.exe
 ```
 
-Press A or D to move the falling piece, S to move it down, and Q to quit.
-In an interactive terminal, each key is read immediately. The piece also
-falls automatically about every half second.
+Press A or D to move the falling piece, S to move it down, W to rotate it,
+and Q to quit. In an interactive terminal, each key is read immediately.
+The piece also falls automatically about every half second. Empty cells
+are shown as dots.
 
 Pieces lock when they land and a new T piece appears at the top. Line
 clearing and scoring are not yet implemented.
