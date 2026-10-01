@@ -14,6 +14,22 @@
 #define WIDTH 10
 
 static uint8_t board[HEIGHT][WIDTH] = {0};
+static const uint8_t block[4][4] = {
+    {0, 1, 0, 0},
+    {1, 1, 1, 0},
+    {0, 0, 0, 0},
+    {0, 0, 0, 0},
+};
+
+typedef struct
+{
+    int x;
+    int y;
+    int rotation;
+    int type;
+} Tetromino;
+
+static Tetromino piece;
 
 #ifndef _WIN32
 static struct termios original_terminal;
@@ -53,6 +69,30 @@ static int read_key(void)
 #endif
 }
 
+static void new_block(void)
+{
+    piece.x = 3;
+    piece.y = 0;
+    piece.rotation = 0;
+    piece.type = 't';
+}
+
+static void update_game(void)
+{
+    for (int row = 0; row < 4; row++)
+    {
+        for (int col = 0; col < 4; col++)
+        {
+            if (block[row][col])
+            {
+                int board_x = piece.x + col;
+                int board_y = piece.y + row;
+                board[board_y][board_x] = 1;
+            }
+        }
+    }
+}
+
 static void make_board(void)
 {
     puts("+----------+");
@@ -74,6 +114,8 @@ int main(void)
     setup_terminal();
 #endif
 
+    new_block();
+    update_game();
     make_board();
     puts("Press W/A/S/D to test input, Q to quit.");
     fflush(stdout);

@@ -21,8 +21,9 @@ Not strictly required, but advised, is Github Desktop.
 
 ## Test the current Tetris scaffold on a PC
 
-`pc/main.c` is a standalone terminal version of the board display and WASD input
-handling in `src/app/main.c`. It does not need the STM32 toolchain or a board.
+`pc/main.c` is a standalone terminal version of the T-piece board display and
+WASD input handling in `src/app/main.c`. It does not need the STM32 toolchain or
+a board.
 
 On macOS or Linux, run from the project directory:
 
@@ -42,6 +43,5 @@ Press W, A, S, or D to check the input messages, and Q to quit. In an
 interactive terminal, each key is read immediately. When input is piped in,
 the program reads the bytes until the pipe closes.
 
-The embedded source currently contains only an empty board display and key
-messages. Falling pieces, movement, line clearing, and scoring are not yet
-implemented there.
+The program places a T piece at the top of the board before reading input.
+Falling pieces, movement, line clearing, and scoring are not yet implemented.
