@@ -1,6 +1,7 @@
 #include "main.h"
 
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 
 #include "can.h"
@@ -22,6 +23,7 @@
 #define WIDTH 10
 
 uint8_t Board[HEIGHT][WIDTH];
+uint32_t Score = 0;
 
 #define PIECE_COUNT 7
 #define ROTATIONS 4
@@ -249,6 +251,47 @@ void LockPiece(void)
     }
 }
 
+void ClearLines(void)
+{
+    int linesCleared = 0;
+
+    for (int y = HEIGHT - 1; y >= 0; y--)
+    {
+        bool full = true;
+
+        for (int x = 0; x < WIDTH; x++)
+        {
+            if (Board[y][x] == 0)
+            {
+                full = false;
+                break;
+            }
+        }
+
+        if (full)
+        {
+            linesCleared++;
+
+            for (int row = y; row > 0; row--)
+            {
+                for (int x = 0; x < WIDTH; x++)
+                {
+                    Board[row][x] = Board[row - 1][x];
+                }
+            }
+
+            for (int x = 0; x < WIDTH; x++)
+            {
+                Board[0][x] = 0;
+            }
+
+            y++; // Recheck the row that just moved down.
+        }
+    }
+
+    Score += linesCleared * 100;
+}
+
 void Render(void)
 {
     rprintf("\033[2J"); // clear terminal
@@ -284,8 +327,8 @@ void Render(void)
     }
 
     rprintf("+----------+\n");
+    rprintf("\nScore: %lu\n", (unsigned long)Score);
     rprintf("A/D: move  S: down  W: rotate\n");
-    rprintf("Score:");
 }
 
 void Get_Input(void)
@@ -333,7 +376,7 @@ void Update_Game(void)
         else
         {
             LockPiece();
-
+            ClearLines();
             NewBlock();
         }
     }
