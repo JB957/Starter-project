@@ -21,6 +21,27 @@
 #define HEIGHT 20
 #define WIDTH 10
 
+#define PIECE_COUNT 7
+
+uint8_t Board[HEIGHT][WIDTH];
+
+uint8_t Block[4][4] =
+    {
+        {0, 1, 0, 0},
+        {1, 1, 1, 0},
+        {0, 0, 0, 0},
+        {0, 0, 0, 0}};
+
+typedef struct
+{
+    int x;
+    int y;
+    int rotation;
+    int type;
+} Tetromino;
+
+Tetromino Piece;
+
 // Blinky Light Code
 
 void heartbeat_task(void *pvParameters)
@@ -35,7 +56,14 @@ void heartbeat_task(void *pvParameters)
 
 // Keyboard
 
-void Keys(void *pvParameters)
+void GameLoop(void *pvParameter)
+{
+    (void)pvParameter;
+    while (true)
+    {
+    }
+}
+void Get_Input(void *pvParameters)
 {
     (void)pvParameters;
     while (true)
@@ -43,7 +71,6 @@ void Keys(void *pvParameters)
         char key = SEGGER_RTT_GetKey();
         if (key == "w")
         {
-            rprintf("Up\n");
         }
         if (key == "a")
         {
@@ -60,9 +87,33 @@ void Keys(void *pvParameters)
     }
 }
 
+void newblock(void)
+{
+
+    Piece.x = 3;
+    Piece.y = 0;
+    Piece.type = "t";
+}
+
+void Update_Game(void)
+{
+    for (int row = 0; row < 4; row++)
+    {
+        for (int col = 0; col < 4; col++)
+        {
+            if (Block[row][col] == 1)
+            {
+                int board_x = Piece.x + col;
+                int board_y = Piece.y + row;
+
+                Board[board_y][board_x] = 1;
+            }
+        }
+    }
+}
+
 void MakeBoard(void)
 {
-    uint8_t board[HEIGHT][WIDTH];
 
     rprintf("+----------+\n");
 
@@ -72,7 +123,7 @@ void MakeBoard(void)
 
         for (int x = 0; x < WIDTH; x++)
         {
-            if (board[y][x])
+            if (Board[y][x])
                 rprintf("#");
             else
                 rprintf(" ");
