@@ -21,7 +21,7 @@ Not strictly required, but advised, is Github Desktop.
 
 ## Test the current Tetris scaffold on a PC
 
-`pc/main.c` is a standalone terminal version of the T-piece game loop in
+`pc/main.c` is a standalone terminal version of the game loop in
 `src/app/main.c`. It does not need the STM32 toolchain or a board.
 
 On macOS or Linux, run from the project directory:
@@ -43,5 +43,5 @@ and Q to quit. In an interactive terminal, each key is read immediately.
 The piece also falls automatically about every half second. Empty cells
 are shown as dots.
 
-Pieces lock when they land and a new T piece appears at the top. Line
-clearing and scoring are not yet implemented.
+Pieces lock when they land. New pieces cycle through T, I, O, L, J, S, and Z.
+Completed lines are cleared, and each cleared line adds 100 points to the score.

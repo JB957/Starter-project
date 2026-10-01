@@ -17,25 +17,74 @@
 
 #define HEIGHT 20
 #define WIDTH 10
+#define PIECE_COUNT 7
+#define ROTATIONS 4
+#define PIECE_SIZE 4
 
 static uint8_t board[HEIGHT][WIDTH] = {0};
-static const uint8_t block[4][4][4] = {
-    {{0, 1, 0, 0},
-     {1, 1, 1, 0},
-     {0, 0, 0, 0},
-     {0, 0, 0, 0}},
-    {{1, 0, 0, 0},
-     {1, 1, 0, 0},
-     {1, 0, 0, 0},
-     {0, 0, 0, 0}},
-    {{1, 1, 1, 0},
-     {0, 1, 0, 0},
-     {0, 0, 0, 0},
-     {0, 0, 0, 0}},
-    {{0, 1, 0, 0},
-     {1, 1, 0, 0},
-     {0, 1, 0, 0},
-     {0, 0, 0, 0}},
+static uint32_t score;
+
+enum PieceType
+{
+    PIECE_T,
+    PIECE_I,
+    PIECE_O,
+    PIECE_L,
+    PIECE_J,
+    PIECE_S,
+    PIECE_Z
+};
+
+static const uint8_t pieces[PIECE_COUNT][ROTATIONS][PIECE_SIZE][PIECE_SIZE] = {
+    // T
+    {
+        {{0, 1, 0, 0}, {1, 1, 1, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}},
+        {{1, 0, 0, 0}, {1, 1, 0, 0}, {1, 0, 0, 0}, {0, 0, 0, 0}},
+        {{1, 1, 1, 0}, {0, 1, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}},
+        {{0, 1, 0, 0}, {1, 1, 0, 0}, {0, 1, 0, 0}, {0, 0, 0, 0}},
+    },
+    // I
+    {
+        {{1, 1, 1, 1}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}},
+        {{1, 0, 0, 0}, {1, 0, 0, 0}, {1, 0, 0, 0}, {1, 0, 0, 0}},
+        {{1, 1, 1, 1}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}},
+        {{1, 0, 0, 0}, {1, 0, 0, 0}, {1, 0, 0, 0}, {1, 0, 0, 0}},
+    },
+    // O
+    {
+        {{1, 1, 0, 0}, {1, 1, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}},
+        {{1, 1, 0, 0}, {1, 1, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}},
+        {{1, 1, 0, 0}, {1, 1, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}},
+        {{1, 1, 0, 0}, {1, 1, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}},
+    },
+    // L
+    {
+        {{1, 0, 0, 0}, {1, 1, 1, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}},
+        {{1, 1, 0, 0}, {1, 0, 0, 0}, {1, 0, 0, 0}, {0, 0, 0, 0}},
+        {{1, 1, 1, 0}, {0, 0, 1, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}},
+        {{0, 1, 0, 0}, {0, 1, 0, 0}, {1, 1, 0, 0}, {0, 0, 0, 0}},
+    },
+    // J
+    {
+        {{0, 0, 1, 0}, {1, 1, 1, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}},
+        {{1, 0, 0, 0}, {1, 0, 0, 0}, {1, 1, 0, 0}, {0, 0, 0, 0}},
+        {{1, 1, 1, 0}, {1, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}},
+        {{1, 1, 0, 0}, {0, 1, 0, 0}, {0, 1, 0, 0}, {0, 0, 0, 0}},
+    },
+    // S
+    {
+        {{0, 1, 1, 0}, {1, 1, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}},
+        {{1, 0, 0, 0}, {1, 1, 0, 0}, {0, 1, 0, 0}, {0, 0, 0, 0}},
+        {{0, 1, 1, 0}, {1, 1, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}},
+        {{1, 0, 0, 0}, {1, 1, 0, 0}, {0, 1, 0, 0}, {0, 0, 0, 0}},
+    },
+    // Z
+    {
+        {{1, 1, 0, 0}, {0, 1, 1, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}},
+        {{0, 1, 0, 0}, {1, 1, 0, 0}, {1, 0, 0, 0}, {0, 0, 0, 0}},
+        {{1, 1, 0, 0}, {0, 1, 1, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}},
+        {{0, 1, 0, 0}, {1, 1, 0, 0}, {1, 0, 0, 0}, {0, 0, 0, 0}},
+    },
 };
 
 typedef struct
@@ -43,9 +92,10 @@ typedef struct
     int x;
     int y;
     int rotation;
+    int type;
 } Tetromino;
 
-static Tetromino piece;
+static Tetromino piece = {.type = PIECE_COUNT - 1};
 static unsigned int gravity_ticks;
 static bool terminal_supports_ansi;
 
@@ -118,23 +168,26 @@ static void new_block(void)
     piece.x = 3;
     piece.y = 0;
     piece.rotation = 0;
+    piece.type++;
+    if (piece.type >= PIECE_COUNT)
+        piece.type = 0;
 }
 
 static bool can_move(int new_x, int new_y)
 {
-    for (int y = 0; y < 4; y++)
+    for (int y = 0; y < PIECE_SIZE; y++)
     {
-        for (int x = 0; x < 4; x++)
+        for (int x = 0; x < PIECE_SIZE; x++)
         {
-            if (block[piece.rotation][y][x])
+            if (pieces[piece.type][piece.rotation][y][x])
             {
                 int board_x = new_x + x;
                 int board_y = new_y + y;
 
-                if (board_x < 0 || board_x >= WIDTH || board_y < 0 || board_y >= HEIGHT)
+                if (board_x < 0 || board_x >= WIDTH || board_y >= HEIGHT)
                     return false;
 
-                if (board[board_y][board_x])
+                if (board_y >= 0 && board[board_y][board_x])
                     return false;
             }
         }
@@ -146,7 +199,7 @@ static bool can_move(int new_x, int new_y)
 static void rotate_piece(void)
 {
     int old_rotation = piece.rotation;
-    piece.rotation = (piece.rotation + 1) % 4;
+    piece.rotation = (piece.rotation + 1) % ROTATIONS;
 
     if (!can_move(piece.x, piece.y))
         piece.rotation = old_rotation;
@@ -154,11 +207,11 @@ static void rotate_piece(void)
 
 static void lock_piece(void)
 {
-    for (int y = 0; y < 4; y++)
+    for (int y = 0; y < PIECE_SIZE; y++)
     {
-        for (int x = 0; x < 4; x++)
+        for (int x = 0; x < PIECE_SIZE; x++)
         {
-            if (block[piece.rotation][y][x])
+            if (pieces[piece.type][piece.rotation][y][x])
             {
                 int board_x = piece.x + x;
                 int board_y = piece.y + y;
@@ -166,6 +219,40 @@ static void lock_piece(void)
             }
         }
     }
+}
+
+static void clear_lines(void)
+{
+    int lines_cleared = 0;
+
+    for (int y = HEIGHT - 1; y >= 0; y--)
+    {
+        bool full = true;
+        for (int x = 0; x < WIDTH; x++)
+        {
+            if (board[y][x] == 0)
+            {
+                full = false;
+                break;
+            }
+        }
+
+        if (full)
+        {
+            lines_cleared++;
+            for (int row = y; row > 0; row--)
+            {
+                for (int x = 0; x < WIDTH; x++)
+                    board[row][x] = board[row - 1][x];
+            }
+            for (int x = 0; x < WIDTH; x++)
+                board[0][x] = 0;
+
+            y++;
+        }
+    }
+
+    score += lines_cleared * 100;
 }
 
 static void get_input(int key)
@@ -192,6 +279,7 @@ static void update_game(void)
         else
         {
             lock_piece();
+            clear_lines();
             new_block();
         }
     }
@@ -213,8 +301,8 @@ static void render(void)
             int local_x = x - piece.x;
             int local_y = y - piece.y;
 
-            if (local_x >= 0 && local_x < 4 && local_y >= 0 && local_y < 4)
-                draw = draw || block[piece.rotation][local_y][local_x];
+            if (local_x >= 0 && local_x < PIECE_SIZE && local_y >= 0 && local_y < PIECE_SIZE)
+                draw = draw || pieces[piece.type][piece.rotation][local_y][local_x];
 
             putchar(draw ? '#' : '.');
         }
@@ -222,6 +310,7 @@ static void render(void)
     }
 
     puts("+----------+");
+    printf("\nScore: %lu\n", (unsigned long)score);
     puts("A/D: move  S: down  W: rotate  Q: quit");
     fflush(stdout);
 }
