@@ -284,6 +284,8 @@ void Render(void)
     }
 
     rprintf("+----------+\n");
+    rprintf("A/D: move  S: down  W: rotate\n");
+    rprintf("Score:");
 }
 
 void Get_Input(void)
