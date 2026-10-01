@@ -61,6 +61,9 @@ void GameLoop(void *pvParameter)
     (void)pvParameter;
     while (true)
     {
+        newblock();
+        Update_Game();
+        MakeBoard();
     }
 }
 void Get_Input(void *pvParameters)
