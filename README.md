@@ -21,9 +21,8 @@ Not strictly required, but advised, is Github Desktop.
 
 ## Test the current Tetris scaffold on a PC
 
-`pc/main.c` is a standalone terminal version of the T-piece board display and
-WASD input handling in `src/app/main.c`. It does not need the STM32 toolchain or
-a board.
+`pc/main.c` is a standalone terminal version of the T-piece game loop in
+`src/app/main.c`. It does not need the STM32 toolchain or a board.
 
 On macOS or Linux, run from the project directory:
 
@@ -39,9 +38,9 @@ gcc -std=c11 -Wall -Wextra -o pc/tetris.exe pc/main.c
 .\pc\tetris.exe
 ```
 
-Press W, A, S, or D to check the input messages, and Q to quit. In an
-interactive terminal, each key is read immediately. When input is piped in,
-the program reads the bytes until the pipe closes.
+Press A or D to move the falling piece, S to move it down, and Q to quit.
+In an interactive terminal, each key is read immediately. The piece also
+falls automatically about every half second.
 
-The program places a T piece at the top of the board before reading input.
-Falling pieces, movement, line clearing, and scoring are not yet implemented.
+Pieces lock when they land and a new T piece appears at the top. Line
+clearing and scoring are not yet implemented.

@@ -5,7 +5,12 @@
 
 #ifdef _WIN32
 #include <conio.h>
+#include <windows.h>
+#ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
+#define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004
+#endif
 #else
+#include <sys/select.h>
 #include <termios.h>
 #include <unistd.h>
 #endif
@@ -25,11 +30,13 @@ typedef struct
 {
     int x;
     int y;
-    int rotation;
-    int type;
 } Tetromino;
 
 static Tetromino piece;
+static unsigned int gravity_ticks;
+static bool terminal_supports_ansi;
+
+enum { NO_KEY = -2 };
 
 #ifndef _WIN32
 static struct termios original_terminal;
@@ -63,9 +70,33 @@ static void setup_terminal(void)
 static int read_key(void)
 {
 #ifdef _WIN32
+    if (!_kbhit())
+        return NO_KEY;
     return _getch();
 #else
-    return getchar();
+    fd_set input;
+    FD_ZERO(&input);
+    FD_SET(STDIN_FILENO, &input);
+    struct timeval timeout = {0, 0};
+
+    int ready = select(STDIN_FILENO + 1, &input, NULL, NULL, &timeout);
+    if (ready < 0)
+        return EOF;
+    if (ready == 0)
+        return NO_KEY;
+
+    unsigned char key;
+    return read(STDIN_FILENO, &key, 1) == 1 ? key : EOF;
+#endif
+}
+
+static void wait_for_tick(void)
+{
+#ifdef _WIN32
+    Sleep(20);
+#else
+    struct timeval delay = {0, 20000};
+    select(0, NULL, NULL, NULL, &delay);
 #endif
 }
 
@@ -73,52 +104,117 @@ static void new_block(void)
 {
     piece.x = 3;
     piece.y = 0;
-    piece.rotation = 0;
-    piece.type = 't';
 }
 
-static void update_game(void)
+static bool can_move(int new_x, int new_y)
 {
-    for (int row = 0; row < 4; row++)
+    for (int y = 0; y < 4; y++)
     {
-        for (int col = 0; col < 4; col++)
+        for (int x = 0; x < 4; x++)
         {
-            if (block[row][col])
+            if (block[y][x])
             {
-                int board_x = piece.x + col;
-                int board_y = piece.y + row;
+                int board_x = new_x + x;
+                int board_y = new_y + y;
+
+                if (board_x < 0 || board_x >= WIDTH || board_y < 0 || board_y >= HEIGHT)
+                    return false;
+
+                if (board[board_y][board_x])
+                    return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+static void lock_piece(void)
+{
+    for (int y = 0; y < 4; y++)
+    {
+        for (int x = 0; x < 4; x++)
+        {
+            if (block[y][x])
+            {
+                int board_x = piece.x + x;
+                int board_y = piece.y + y;
                 board[board_y][board_x] = 1;
             }
         }
     }
 }
 
-static void make_board(void)
+static void get_input(int key)
 {
+    if ((key == 'a' || key == 'A') && can_move(piece.x - 1, piece.y))
+        piece.x--;
+    if ((key == 'd' || key == 'D') && can_move(piece.x + 1, piece.y))
+        piece.x++;
+    if ((key == 's' || key == 'S') && can_move(piece.x, piece.y + 1))
+        piece.y++;
+}
+
+static void update_game(void)
+{
+    gravity_ticks++;
+    if (gravity_ticks > 25)
+    {
+        gravity_ticks = 0;
+
+        if (can_move(piece.x, piece.y + 1))
+            piece.y++;
+        else
+        {
+            lock_piece();
+            new_block();
+        }
+    }
+}
+
+static void render(void)
+{
+    if (terminal_supports_ansi)
+        fputs("\033[H\033[2J", stdout);
+
     puts("+----------+");
 
     for (int y = 0; y < HEIGHT; y++)
     {
         putchar('|');
         for (int x = 0; x < WIDTH; x++)
-            putchar(board[y][x] ? '#' : ' ');
+        {
+            bool draw = board[y][x];
+            int local_x = x - piece.x;
+            int local_y = y - piece.y;
+
+            if (local_x >= 0 && local_x < 4 && local_y >= 0 && local_y < 4)
+                draw = draw || block[local_y][local_x];
+
+            putchar(draw ? '#' : ' ');
+        }
         puts("|");
     }
 
     puts("+----------+");
+    puts("A/D: move  S: down  Q: quit");
+    fflush(stdout);
 }
 
 int main(void)
 {
-#ifndef _WIN32
+#ifdef _WIN32
+    HANDLE output = GetStdHandle(STD_OUTPUT_HANDLE);
+    DWORD mode;
+    if (output != INVALID_HANDLE_VALUE && GetConsoleMode(output, &mode))
+        terminal_supports_ansi = SetConsoleMode(output, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING) != 0;
+#else
     setup_terminal();
+    terminal_supports_ansi = isatty(STDOUT_FILENO);
 #endif
 
     new_block();
-    update_game();
-    make_board();
-    puts("Press W/A/S/D to test input, Q to quit.");
-    fflush(stdout);
+    render();
 
     for (;;)
     {
@@ -126,28 +222,10 @@ int main(void)
         if (key == EOF || key == 'q' || key == 'Q' || key == 3)
             break;
 
-        switch (key)
-        {
-        case 'w':
-        case 'W':
-            puts("Up");
-            break;
-        case 'a':
-        case 'A':
-            puts("Left");
-            break;
-        case 's':
-        case 'S':
-            puts("Down");
-            break;
-        case 'd':
-        case 'D':
-            puts("Right");
-            break;
-        default:
-            continue;
-        }
-        fflush(stdout);
+        get_input(key);
+        update_game();
+        render();
+        wait_for_tick();
     }
 
     return 0;
