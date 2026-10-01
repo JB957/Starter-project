@@ -23,17 +23,30 @@
 
 uint8_t Board[HEIGHT][WIDTH];
 
-uint8_t Block[4][4] =
+uint8_t Block[4][4][4] =
     {
-        {0, 1, 0, 0},
-        {1, 1, 1, 0},
-        {0, 0, 0, 0},
-        {0, 0, 0, 0}};
+        {{0, 1, 0, 0},
+         {1, 1, 1, 0},
+         {0, 0, 0, 0},
+         {0, 0, 0, 0}},
+        {{1, 0, 0, 0},
+         {1, 1, 0, 0},
+         {1, 0, 0, 0},
+         {0, 0, 0, 0}},
+        {{1, 1, 1, 0},
+         {0, 1, 0, 0},
+         {0, 0, 0, 0},
+         {0, 0, 0, 0}},
+        {{0, 1, 0, 0},
+         {1, 1, 0, 0},
+         {0, 1, 0, 0},
+         {0, 0, 0, 0}}};
 
 typedef struct
 {
     int x;
     int y;
+    int rotation;
 
 } Tetromino;
 
@@ -43,6 +56,7 @@ void NewBlock(void)
 {
     Piece.x = 3;
     Piece.y = 0;
+    Piece.rotation = 0;
 }
 
 bool CanMove(int newX, int newY)
@@ -51,7 +65,7 @@ bool CanMove(int newX, int newY)
     {
         for (int x = 0; x < 4; x++)
         {
-            if (Block[y][x])
+            if (Block[Piece.rotation][y][x])
             {
                 int boardX = newX + x;
                 int boardY = newY + y;
@@ -60,7 +74,7 @@ bool CanMove(int newX, int newY)
                 if (boardX < 0 || boardX >= WIDTH)
                     return false;
 
-                if (boardY >= HEIGHT)
+                if (boardY < 0 || boardY >= HEIGHT)
                     return false;
 
                 // hit existing block
@@ -73,13 +87,25 @@ bool CanMove(int newX, int newY)
     return true;
 }
 
+void RotatePiece(void)
+{
+    int oldRotation = Piece.rotation;
+
+    Piece.rotation++;
+    if (Piece.rotation >= 4)
+        Piece.rotation = 0;
+
+    if (!CanMove(Piece.x, Piece.y))
+        Piece.rotation = oldRotation;
+}
+
 void LockPiece(void)
 {
     for (int y = 0; y < 4; y++)
     {
         for (int x = 0; x < 4; x++)
         {
-            if (Block[y][x])
+            if (Block[Piece.rotation][y][x])
             {
                 Board[Piece.y + y][Piece.x + x] = 1;
             }
@@ -108,14 +134,14 @@ void Render(void)
             if (localX >= 0 && localX < 4 &&
                 localY >= 0 && localY < 4)
             {
-                if (Block[localY][localX])
+                if (Block[Piece.rotation][localY][localX])
                     draw = true;
             }
 
             if (draw)
                 rprintf("#");
             else
-                rprintf(" ");
+                rprintf(".");
         }
 
         rprintf("|\n");
@@ -144,6 +170,10 @@ void Get_Input(void)
     {
         if (CanMove(Piece.x, Piece.y + 1))
             Piece.y++;
+    }
+    if (key == 'w')
+    {
+        RotatePiece();
     }
 }
 
