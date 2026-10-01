@@ -21,8 +21,6 @@
 #define HEIGHT 20
 #define WIDTH 10
 
-#define PIECE_COUNT 7
-
 uint8_t Board[HEIGHT][WIDTH];
 
 uint8_t Block[4][4] =
@@ -36,87 +34,62 @@ typedef struct
 {
     int x;
     int y;
-    int rotation;
-    int type;
+
 } Tetromino;
 
 Tetromino Piece;
 
-// Blinky Light Code
-
-void heartbeat_task(void *pvParameters)
+void NewBlock(void)
 {
-    (void)pvParameters;
-    while (true)
-    {
-        core_GPIO_toggle_heartbeat();
-        vTaskDelay(200 * portTICK_PERIOD_MS);
-    }
-}
-
-// Keyboard
-
-void GameLoop(void *pvParameter)
-{
-    (void)pvParameter;
-    while (true)
-    {
-        newblock();
-        Update_Game();
-        MakeBoard();
-    }
-}
-void Get_Input(void *pvParameters)
-{
-    (void)pvParameters;
-    while (true)
-    {
-        char key = SEGGER_RTT_GetKey();
-        if (key == "w")
-        {
-        }
-        if (key == "a")
-        {
-            rprintf("Left\n");
-        }
-        if (key == "s")
-        {
-            rprintf("Down \n");
-        }
-        if (key == "d")
-        {
-            rprintf("Right\n");
-        }
-    }
-}
-
-void newblock(void)
-{
-
     Piece.x = 3;
     Piece.y = 0;
-    Piece.type = "t";
 }
 
-void Update_Game(void)
+bool CanMove(int newX, int newY)
 {
-    for (int row = 0; row < 4; row++)
+    for (int y = 0; y < 4; y++)
     {
-        for (int col = 0; col < 4; col++)
+        for (int x = 0; x < 4; x++)
         {
-            if (Block[row][col] == 1)
+            if (Block[y][x])
             {
-                int board_x = Piece.x + col;
-                int board_y = Piece.y + row;
+                int boardX = newX + x;
+                int boardY = newY + y;
 
-                Board[board_y][board_x] = 1;
+                // hit walls/floor
+                if (boardX < 0 || boardX >= WIDTH)
+                    return false;
+
+                if (boardY >= HEIGHT)
+                    return false;
+
+                // hit existing block
+                if (Board[boardY][boardX])
+                    return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+void LockPiece(void)
+{
+    for (int y = 0; y < 4; y++)
+    {
+        for (int x = 0; x < 4; x++)
+        {
+            if (Block[y][x])
+            {
+                Board[Piece.y + y][Piece.x + x] = 1;
             }
         }
     }
 }
 
-void MakeBoard(void)
+void Render(void)
 {
+    rprintf("\033[2J"); // clear terminal
 
     rprintf("+----------+\n");
 
@@ -126,7 +99,20 @@ void MakeBoard(void)
 
         for (int x = 0; x < WIDTH; x++)
         {
-            if (Board[y][x])
+            bool draw = Board[y][x];
+
+            // draw falling piece
+            int localX = x - Piece.x;
+            int localY = y - Piece.y;
+
+            if (localX >= 0 && localX < 4 &&
+                localY >= 0 && localY < 4)
+            {
+                if (Block[localY][localX])
+                    draw = true;
+            }
+
+            if (draw)
                 rprintf("#");
             else
                 rprintf(" ");
@@ -136,6 +122,71 @@ void MakeBoard(void)
     }
 
     rprintf("+----------+\n");
+}
+
+void Get_Input(void)
+{
+    int key = SEGGER_RTT_GetKey();
+
+    if (key == 'a')
+    {
+        if (CanMove(Piece.x - 1, Piece.y))
+            Piece.x--;
+    }
+
+    if (key == 'd')
+    {
+        if (CanMove(Piece.x + 1, Piece.y))
+            Piece.x++;
+    }
+
+    if (key == 's')
+    {
+        if (CanMove(Piece.x, Piece.y + 1))
+            Piece.y++;
+    }
+}
+
+void Update_Game(void)
+{
+    static uint32_t timer = 0;
+
+    timer++;
+
+    // gravity every ~500ms
+    if (timer > 25)
+    {
+        timer = 0;
+
+        if (CanMove(Piece.x, Piece.y + 1))
+        {
+            Piece.y++;
+        }
+        else
+        {
+            LockPiece();
+
+            NewBlock();
+        }
+    }
+}
+
+void GameLoop(void *pvParameter)
+{
+    (void)pvParameter;
+
+    NewBlock();
+
+    while (true)
+    {
+        Get_Input();
+
+        Update_Game();
+
+        Render();
+
+        vTaskDelay(pdMS_TO_TICKS(20));
+    }
 }
 
 //  Main Duh
