@@ -29,6 +29,8 @@ uint32_t Score = 0;
 #define ROTATIONS 4
 #define PIECE_SIZE 4
 
+void ResetGame(void);
+
 enum PieceType
 {
     PIECE_T,
@@ -356,6 +358,10 @@ void Get_Input(void)
     {
         RotatePiece();
     }
+    if (key == 'r')
+    {
+        ResetGame();
+    }
 }
 
 void Update_Game(void)
@@ -398,6 +404,20 @@ void GameLoop(void *pvParameter)
 
         vTaskDelay(pdMS_TO_TICKS(20));
     }
+}
+
+void ResetGame(void)
+{
+    for (int y = 0; y < HEIGHT; y++)
+    {
+        for (int x = 0; x < WIDTH; x++)
+        {
+            Board[y][x] = 0;
+        }
+    }
+
+    Score = 0;
+    NewBlock();
 }
 
 //  Main Duh
