@@ -23,49 +23,185 @@
 
 uint8_t Board[HEIGHT][WIDTH];
 
-uint8_t Block[4][4][4] =
+#define PIECE_COUNT 7
+#define ROTATIONS 4
+#define PIECE_SIZE 4
+
+enum PieceType
+{
+    PIECE_T,
+    PIECE_I,
+    PIECE_O,
+    PIECE_L,
+    PIECE_J,
+    PIECE_S,
+    PIECE_Z
+};
+
+uint8_t Pieces[PIECE_COUNT][ROTATIONS][PIECE_SIZE][PIECE_SIZE] =
     {
-        {{0, 1, 0, 0},
-         {1, 1, 1, 0},
-         {0, 0, 0, 0},
-         {0, 0, 0, 0}},
-        {{1, 0, 0, 0},
-         {1, 1, 0, 0},
-         {1, 0, 0, 0},
-         {0, 0, 0, 0}},
-        {{1, 1, 1, 0},
-         {0, 1, 0, 0},
-         {0, 0, 0, 0},
-         {0, 0, 0, 0}},
-        {{0, 1, 0, 0},
-         {1, 1, 0, 0},
-         {0, 1, 0, 0},
-         {0, 0, 0, 0}}};
+        // T
+        {
+            {{0, 1, 0, 0},
+             {1, 1, 1, 0},
+             {0, 0, 0, 0},
+             {0, 0, 0, 0}},
+            {{1, 0, 0, 0},
+             {1, 1, 0, 0},
+             {1, 0, 0, 0},
+             {0, 0, 0, 0}},
+            {{1, 1, 1, 0},
+             {0, 1, 0, 0},
+             {0, 0, 0, 0},
+             {0, 0, 0, 0}},
+            {{0, 1, 0, 0},
+             {1, 1, 0, 0},
+             {0, 1, 0, 0},
+             {0, 0, 0, 0}}},
+
+        // I
+        {
+            {{1, 1, 1, 1},
+             {0, 0, 0, 0},
+             {0, 0, 0, 0},
+             {0, 0, 0, 0}},
+            {{1, 0, 0, 0},
+             {1, 0, 0, 0},
+             {1, 0, 0, 0},
+             {1, 0, 0, 0}},
+            {{1, 1, 1, 1},
+             {0, 0, 0, 0},
+             {0, 0, 0, 0},
+             {0, 0, 0, 0}},
+            {{1, 0, 0, 0},
+             {1, 0, 0, 0},
+             {1, 0, 0, 0},
+             {1, 0, 0, 0}}},
+
+        // O
+        {
+            {{1, 1, 0, 0},
+             {1, 1, 0, 0},
+             {0, 0, 0, 0},
+             {0, 0, 0, 0}},
+            {{1, 1, 0, 0},
+             {1, 1, 0, 0},
+             {0, 0, 0, 0},
+             {0, 0, 0, 0}},
+            {{1, 1, 0, 0},
+             {1, 1, 0, 0},
+             {0, 0, 0, 0},
+             {0, 0, 0, 0}},
+            {{1, 1, 0, 0},
+             {1, 1, 0, 0},
+             {0, 0, 0, 0},
+             {0, 0, 0, 0}}},
+
+        // L
+        {
+            {{1, 0, 0, 0},
+             {1, 1, 1, 0},
+             {0, 0, 0, 0},
+             {0, 0, 0, 0}},
+            {{1, 1, 0, 0},
+             {1, 0, 0, 0},
+             {1, 0, 0, 0},
+             {0, 0, 0, 0}},
+            {{1, 1, 1, 0},
+             {0, 0, 1, 0},
+             {0, 0, 0, 0},
+             {0, 0, 0, 0}},
+            {{0, 1, 0, 0},
+             {0, 1, 0, 0},
+             {1, 1, 0, 0},
+             {0, 0, 0, 0}}},
+
+        // J
+        {
+            {{0, 0, 1, 0},
+             {1, 1, 1, 0},
+             {0, 0, 0, 0},
+             {0, 0, 0, 0}},
+            {{1, 0, 0, 0},
+             {1, 0, 0, 0},
+             {1, 1, 0, 0},
+             {0, 0, 0, 0}},
+            {{1, 1, 1, 0},
+             {1, 0, 0, 0},
+             {0, 0, 0, 0},
+             {0, 0, 0, 0}},
+            {{1, 1, 0, 0},
+             {0, 1, 0, 0},
+             {0, 1, 0, 0},
+             {0, 0, 0, 0}}},
+
+        // S
+        {
+            {{0, 1, 1, 0},
+             {1, 1, 0, 0},
+             {0, 0, 0, 0},
+             {0, 0, 0, 0}},
+            {{1, 0, 0, 0},
+             {1, 1, 0, 0},
+             {0, 1, 0, 0},
+             {0, 0, 0, 0}},
+            {{0, 1, 1, 0},
+             {1, 1, 0, 0},
+             {0, 0, 0, 0},
+             {0, 0, 0, 0}},
+            {{1, 0, 0, 0},
+             {1, 1, 0, 0},
+             {0, 1, 0, 0},
+             {0, 0, 0, 0}}},
+
+        // Z
+        {
+            {{1, 1, 0, 0},
+             {0, 1, 1, 0},
+             {0, 0, 0, 0},
+             {0, 0, 0, 0}},
+            {{0, 1, 0, 0},
+             {1, 1, 0, 0},
+             {1, 0, 0, 0},
+             {0, 0, 0, 0}},
+            {{1, 1, 0, 0},
+             {0, 1, 1, 0},
+             {0, 0, 0, 0},
+             {0, 0, 0, 0}},
+            {{0, 1, 0, 0},
+             {1, 1, 0, 0},
+             {1, 0, 0, 0},
+             {0, 0, 0, 0}}}};
 
 typedef struct
 {
     int x;
     int y;
     int rotation;
+    int type;
 
 } Tetromino;
 
-Tetromino Piece;
+Tetromino Piece = {.type = PIECE_COUNT - 1};
 
 void NewBlock(void)
 {
     Piece.x = 3;
     Piece.y = 0;
     Piece.rotation = 0;
+
+    Piece.type++;
+    if (Piece.type >= PIECE_COUNT)
+        Piece.type = 0;
 }
 
 bool CanMove(int newX, int newY)
 {
-    for (int y = 0; y < 4; y++)
+    for (int y = 0; y < PIECE_SIZE; y++)
     {
-        for (int x = 0; x < 4; x++)
+        for (int x = 0; x < PIECE_SIZE; x++)
         {
-            if (Block[Piece.rotation][y][x])
+            if (Pieces[Piece.type][Piece.rotation][y][x])
             {
                 int boardX = newX + x;
                 int boardY = newY + y;
@@ -74,11 +210,11 @@ bool CanMove(int newX, int newY)
                 if (boardX < 0 || boardX >= WIDTH)
                     return false;
 
-                if (boardY < 0 || boardY >= HEIGHT)
+                if (boardY >= HEIGHT)
                     return false;
 
                 // hit existing block
-                if (Board[boardY][boardX])
+                if (boardY >= 0 && Board[boardY][boardX])
                     return false;
             }
         }
@@ -92,7 +228,7 @@ void RotatePiece(void)
     int oldRotation = Piece.rotation;
 
     Piece.rotation++;
-    if (Piece.rotation >= 4)
+    if (Piece.rotation >= ROTATIONS)
         Piece.rotation = 0;
 
     if (!CanMove(Piece.x, Piece.y))
@@ -101,11 +237,11 @@ void RotatePiece(void)
 
 void LockPiece(void)
 {
-    for (int y = 0; y < 4; y++)
+    for (int y = 0; y < PIECE_SIZE; y++)
     {
-        for (int x = 0; x < 4; x++)
+        for (int x = 0; x < PIECE_SIZE; x++)
         {
-            if (Block[Piece.rotation][y][x])
+            if (Pieces[Piece.type][Piece.rotation][y][x])
             {
                 Board[Piece.y + y][Piece.x + x] = 1;
             }
@@ -131,10 +267,10 @@ void Render(void)
             int localX = x - Piece.x;
             int localY = y - Piece.y;
 
-            if (localX >= 0 && localX < 4 &&
-                localY >= 0 && localY < 4)
+            if (localX >= 0 && localX < PIECE_SIZE &&
+                localY >= 0 && localY < PIECE_SIZE)
             {
-                if (Block[Piece.rotation][localY][localX])
+                if (Pieces[Piece.type][Piece.rotation][localY][localX])
                     draw = true;
             }
 
@@ -226,6 +362,9 @@ int main(void)
     HAL_Init();
 
     if (!core_clock_init())
+        error_handler();
+
+    if (xTaskCreate(GameLoop, "Game", 1000, NULL, 4, NULL) != pdPASS)
         error_handler();
 
     NVIC_SetPriorityGrouping(NVIC_PRIORITYGROUP_4);
